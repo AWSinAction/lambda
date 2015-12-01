@@ -1,0 +1,112 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "AWS in Action: Lambda",
+  "Parameters": {
+    "ImageS3Bucket": {
+      "Description": "The name of the S3 bucket that is created for images.",
+      "Type": "String"
+    },
+    "LambdaS3Bucket": {
+      "Description": "The name of the S3 bucket that contains the source code of your Lambda function.",
+      "Type": "String"
+    },
+    "LambdaS3Key": {
+      "Description": "The location and name of your source code .zip file.",
+      "Type": "String",
+      "Default": "lambda.zip"
+    }
+  },
+  "Resources": {
+    "OriginalS3Bucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {"Fn::Join": ["-", [{"Ref": "ImageS3Bucket"}, "original"]]},
+        "NotificationConfiguration": {
+          "LambdaConfigurations": [{
+            "Event": "s3:ObjectCreated:*",
+            "Function": {"Fn::GetAtt": ["Lambda", "Arn"]}
+          }]
+        }
+      }
+    },
+    "ResizedS3Bucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {"Fn::Join": ["-", [{"Ref": "ImageS3Bucket"}, "resized"]]}
+      }
+    },
+    "LambdaRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "lambda.amazonaws.com"
+            },
+            "Action": ["sts:AssumeRole"]
+          }]
+        },
+        "Path": "/",
+        "Policies": [{
+          "PolicyName": "logs",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Effect": "Allow",
+              "Action": [
+                 "logs:*"
+              ],
+              "Resource": "arn:aws:logs:*:*:*"
+            }]
+          }
+        }, {
+          "PolicyName": "s3-original",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Effect": "Allow",
+              "Action": ["s3:GetObject"],
+              "Resource": [{"Fn::Join": ["", ["arn:aws:s3:::", {"Ref": "ImageS3Bucket"}, "-original/*"]]}]
+            }]
+          }
+        }, {
+          "PolicyName": "s3-resized",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Effect": "Allow",
+              "Action": ["s3:PutObject"],
+              "Resource": [{"Fn::Join": ["", ["arn:aws:s3:::", {"Ref": "ImageS3Bucket"}, "-resized/*"]]}]
+            }]
+          }
+        }]
+      }
+    },
+    "Lambda": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {"Ref": "LambdaS3Bucket"},
+          "S3Key": {"Ref": "LambdaS3Key"}
+        },
+        "Description": "generic hanlder",
+        "Handler": "index.handler",
+        "MemorySize": 256,
+        "Role": {"Fn::GetAtt": ["LambdaRole", "Arn"]},
+        "Runtime": "nodejs",
+        "Timeout": 30
+      }
+    },
+    "LambdaPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:invokeFunction",
+        "FunctionName": {"Fn::GetAtt": ["Lambda", "Arn"]},
+        "Principal": "s3.amazonaws.com",
+        "SourceArn": {"Fn::Join": ["", ["arn:aws:s3:::", {"Ref": "ImageS3Bucket"}, "-original"]]}
+      }
+    }
+  }
+}
