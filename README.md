@@ -1,6 +1,6 @@
 # AWS in Action: Lambda
 
-The example demonstrates how you can automaically resize images that are upload into a S3 Bucket. Therfore two S3 buckets are created. One that contains the original files and one that contains the resized images.
+This example demonstrates how you can automaically resize images that are uploaded into a S3 Bucket. Therfore two S3 buckets are created. One that contains the original files and one that contains the resized images.
 
 ## Setup
 
