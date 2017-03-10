@@ -48,7 +48,8 @@ exports.handler = function(event, context) {
 		});
 	}, function(err, images) {
 		if (err) {
-			context.fail(err);
+			context.callbackWaitsForEmptyEventLoop = false;
+			callback(err, 'Failed result');
 		} else {
 			var resizePairs = cross(CONFIG.sizes, images);
 			async.eachLimit(resizePairs, CONFIG.concurrency, function(resizePair, cb) {
@@ -70,9 +71,11 @@ exports.handler = function(event, context) {
 				});
 			}, function(err) {
 				if (err) {
-					context.fail(err);
+					context.callbackWaitsForEmptyEventLoop = false;
+					callback(err, 'Failed result');
 				} else {
-					context.succeed();
+					context.callbackWaitsForEmptyEventLoop = false;
+					callback(null, 'Success message');
 				}
 			});
 		}
