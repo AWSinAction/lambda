@@ -50,7 +50,7 @@ exports.handler = function(event, context, callback) {
 	}, function(err, images) {
 		if (err) {
 			context.callbackWaitsForEmptyEventLoop = false;
-			callback(err, 'Failed result');
+			callback(err);
 		} else {
 			var resizePairs = cross(CONFIG.sizes, images);
 			async.eachLimit(resizePairs, CONFIG.concurrency, function(resizePair, cb) {
@@ -73,9 +73,9 @@ exports.handler = function(event, context, callback) {
 			}, function(err) {
 				context.callbackWaitsForEmptyEventLoop = false;
 				if (err) {
-					callback(err, 'Failed result');
+					callback(err);
 				} else {
-					callback(null, 'Success message');
+					callback();
 				}
 			});
 		}
