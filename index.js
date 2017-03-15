@@ -7,13 +7,14 @@ var s3 = new AWS.S3();
 var CONFIG = require("./config.json");
 
 function getImageType(objectContentType) {
-	if (objectContentType === "image/jpeg") {
-		return "jpeg";
-	} else if (objectContentType === "image/png") {
-		return "png";
-	} else {
-		throw new Error("unsupported objectContentType " + objectContentType);
-	}
+    switch (objectContentType) {
+        case "image/jpeg":
+            return "jpeg";
+        case "image/png":
+            return "png";
+        default:
+            throw new Error("Unsupported objectContentType " + objectContentType);
+    }
 }
 
 function cross(left, right) {
@@ -26,7 +27,7 @@ function cross(left, right) {
 	return res;
 }
 
-exports.handler = function(event, context) {
+exports.handler = function(event, context, callback) {
 	console.log("event ", JSON.stringify(event));
 	async.mapLimit(event.Records, CONFIG.concurrency, function(record, cb) {
 		var originalKey = decodeURIComponent(record.s3.object.key.replace(/\+/g, " "));
@@ -48,7 +49,8 @@ exports.handler = function(event, context) {
 		});
 	}, function(err, images) {
 		if (err) {
-			context.fail(err);
+			context.callbackWaitsForEmptyEventLoop = false;
+			callback(err);
 		} else {
 			var resizePairs = cross(CONFIG.sizes, images);
 			async.eachLimit(resizePairs, CONFIG.concurrency, function(resizePair, cb) {
@@ -69,10 +71,11 @@ exports.handler = function(event, context) {
 					}
 				});
 			}, function(err) {
+				context.callbackWaitsForEmptyEventLoop = false;
 				if (err) {
-					context.fail(err);
+					callback(err);
 				} else {
-					context.succeed();
+					callback();
 				}
 			});
 		}
