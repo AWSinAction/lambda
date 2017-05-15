@@ -93,7 +93,7 @@
         },
         "Description": "generic hanlder",
         "Handler": "index.handler",
-        "MemorySize": 256,
+        "MemorySize": 1536,
         "Role": {"Fn::GetAtt": ["LambdaRole", "Arn"]},
         "Runtime": "nodejs6.10",
         "Timeout": 30
